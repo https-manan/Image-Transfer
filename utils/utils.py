@@ -13,14 +13,14 @@ class ImageFolderDataset(Dataset):
         self.root = root
         self.transform = transform
         self.files = list(os.listdir(root)) #root foelder mai jitni bhi files hai read'em and images ko in form of lisst store
-        self.files = [p for p in self.files if p.endswith('.jpg', '.png', '.jpeg')]#This is a filter that tells ki img ka allawa koi or file na ho
+        self.files = [p for p in self.files if p.lower().endswith(('.jpg', '.png', '.jpeg'))]#This is a filter that tells ki img ka allawa koi or file na ho
 
     def __len__(self):
         return len(self.files)  # This len returns how many samples are inside  
      
     def __getitem__(self, idx):
         image_path = os.path.join(self.root, self.files[idx]) #this if for to get the exect location of that image from the root folder like :- my_images/img.png and this img.png is we get from files list that we have created aboove
-        image = Image.open(image_path)
+        image = Image.open(image_path).convert('RGB')
         
         if self.transform:
             image = self.transform(image) 
@@ -39,3 +39,22 @@ def get_transform(size, crop, final_size):
 
     transform_list.append(transforms.ToTensor())
     return transforms.Compose(transform_list)
+
+
+def adaptive_instance_normalization(content_feat, style_feat):
+    # [batch_size, channels, h, w]
+    size = content_feat.size()
+    style_mean, style_std = calc_mean_std(style_feat)
+    content_mean, content_std = calc_mean_std(content_feat)
+    normalized_content_feat = (content_feat - content_mean.expand(size)) / content_std.expand(size)
+    return normalized_content_feat * style_std.expand(size) + style_mean.expand(size)
+
+def calc_mean_std(feat, eps=1e-5):
+    # [ batch size, channels, h, w]
+    size = feat.size()
+    assert (len(size) == 4)
+    batch_size, channels = size[:2]
+    feat_mean = feat.view(batch_size, channels, -1).mean(dim=2).view(batch_size, channels, 1, 1)
+    feat_var = feat.view(batch_size, channels, -1).var(dim=2, unbiased=False) + eps
+    feat_std = feat_var.sqrt().view(batch_size, channels, 1, 1)
+    return feat_mean, feat_std

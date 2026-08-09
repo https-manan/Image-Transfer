@@ -96,7 +96,7 @@ class VGGEncoder(nn.Module):
         return h1,h2,h3,h4
 
 
-class Decoder(nn.modules):
+class Decoder(nn.Module):
     def __init__(self):
         super(Decoder,self).__init__()
         self.decoder=nn.Sequential(
