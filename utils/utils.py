@@ -5,7 +5,7 @@
 from torch.utils.data import Dataset
 import os
 from PIL import Image  #Python image library it allows us to open images we have seen this in AI-Attandance project
-
+from torchvision import transforms
 
 class ImageFolderDataset(Dataset):
     def __init__(self, root, transform = None):   #Root is the folder that contains images
@@ -26,3 +26,16 @@ class ImageFolderDataset(Dataset):
             image = self.transform(image) 
 
         return image           #This func simply returns images from the folder
+
+
+def get_transform(size, crop, final_size):
+    transform_list = []
+    if size > 0:
+        transform_list.append(transforms.Resize(size))  #jo given size by user hai usme transform the image 
+    if crop:
+        transform_list.append(transforms.RandomCrop(final_size))  #RandCrop is predefined to crop the image acc to final sze user wants 
+    else:
+        transform_list.append(transforms.Resize(final_size))
+
+    transform_list.append(transforms.ToTensor())
+    return transforms.Compose(transform_list)
