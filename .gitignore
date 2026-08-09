@@ -1,0 +1,84 @@
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+.venv/
+ENV/
+
+# Environment Variables
+.env
+.env.*
+
+# ===========================
+# Jupyter
+# ===========================
+.ipynb_checkpoints/
+
+# ===========================
+# Build & Distribution
+# ===========================
+build/
+dist/
+*.egg-info/
+
+# ===========================
+# Logs
+# ===========================
+*.log
+
+# ===========================
+# Model Files
+# ===========================
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.onnx
+
+# ===========================
+# Generated Images & Outputs
+# ===========================
+outputs/
+results/
+generated/
+runs/
+
+# ===========================
+# Dataset & Style Images (optional)
+# Uncomment if your dataset is large
+# ===========================
+# data/
+# datasets/
+
+# ===========================
+# Your Project Data
+# ===========================
+Content_data/
+Style_data/
+Content_temp/
+style_temp/
+
+# ===========================
+# IDE
+# ===========================
+.vscode/
+.idea/
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+Thumbs.db
+
+# ===========================
+# Testing
+# ===========================
+.pytest_cache/
+.coverage
+htmlcov/
