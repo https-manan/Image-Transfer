@@ -25,8 +25,12 @@ def parse_arguments():
     parser.add_argument('--lr_decay',type=float,default=5e-5,help='Learning rate decay') 
     parser.add_argument('--epochs',type=int,default=2,help='Number of epochs')
     parser.add_argument('--content_weight',type=float,default=1.0,help='content weights')
-    parser.add_argument('--style_weight',type=float,default=10,help='style weights')
+    parser.add_argument('--style_weight',type=float,default=10,help='style weights')    
+    parser.add_argument('--log_interval',type=int,default=1,help='Log interval')
+
     return parser.parse_args()
+
+
 
 
 
@@ -41,35 +45,58 @@ def main():
         for key,val in vars(args).items():             #vars is to convert in dictionary we cannot use dictionary directly  key=name and val=actual value of that 
             args_file.write(f"{key}:{val}\n")
 
+                      
+    content_transform = get_transform(args.content_size,args.crop,args.final_size)#Here we gonna define the resizing and cropping transformation on image  and this we gonna ask from and take from use in parse args
+    style_transform = get_transform(args.style_size, args.crop, args.final_size) #This is basically for the style size and upper one is for content size  
 
-    content_transform = get_transform(args.final_size,args.crop,args.content_size)#Here we gonna define the resizing and cropping transformation on image  and this we gonna ask from and take from use in parse args
-    style_transform = get_transform(args.final_size, args.crop, args.style_size) #This is basically for the style size and upper one is for content size  
 
-                                        #Root,transform in contentDataset
+    #abb we gonna load content and style dataset       
+                   
+                                        #Path,transform for content and style Dataset
     content_dataset=ImageFolderDataset(args.content_dir,content_transform)  #creating datasets of content and style images and like getting data from the folder of content and style 
-    style_dataset=ImageFolderDataset(args.style_dir,style_transform)
+    style_dataset=ImageFolderDataset(args.style_dir,style_transform) 
 
+
+    # So after dataset we gonna crete dataloaders simply import from torch
     content_dataloader = DataLoader(content_dataset,batch_size=args.batch_size,shuffle=True,pin_memory=True,drop_last=True)  #shuffel  true means har epoch ke baad dataset gonna shuffel
     style_dataloader = DataLoader(style_dataset,batch_size=args.batch_size,shuffle=True,pin_memory=True,drop_last=True)  #and this pin_memory is imp for the transformation from CPU to CGP
 
-    encoder=VGGEncoder(args.vgg).to(device)
+
+
+    #---------------------------------------------------------------------------------------#
+    #Encoder decoder part starts 
+
+                    # vgg ka path pass that we have defined in args
+    encoder=VGGEncoder(args.vgg).to(device)   #setting encoder and decoder to the GPU by .to(device)
     decoder=Decoder().to(device)
 
-    optimizer=optim.Adam(decoder.parameters(),lr=args.lr)
+
+    #Optimizer for which we gonna use adam optimizer
+    optimizer=optim.Adam(decoder.parameters(),lr=args.lr) #optimizer gonna take parameters and learning rate
     scheduler = optim.lr_scheduler.LambdaLR(    #Scadular is for ki learning rate increase kb krna hai and dec kb krna hai
         optimizer,
         lr_lambda=lambda epoch:1.0/(1.0+args.lr_decay*epoch)
     )
 
+
+    #Loss function for this we gonna simply use MSE
     mse_loss=torch.nn.MSELoss()#So we gonna use mean sq error loss for the loss calculation
 
+
+    #Study later ki eval and training mode mai kya kya diff hota hai
+    encoder.eval()  #This is to make the model in evaluation mode not in the training mode
+
+
+    #Toal 3 losses we have to calculate 1.)Total 2.)Content 3.)Style
     running_loss=None     #So this is the total loss
     running_content_loss=None #These are the content and style losses
     running_style_loss=None 
-    encoder.eval()  #This is to make the model in evaluation mode not in the training mode
+
+
 
     for epoch in range(args.epochs):
-        progress_bar=tqdm(zip(content_dataloader,style_dataloader),total=min(len(content_dataloader),len(style_dataloader)))      #This tqdm library is for tracking loops and here for tracking training loops  ka progress like 10%.........25% and so on ....
+                             #Progress bar is over dataloaders
+        progress_bar=tqdm(zip(content_dataloader,style_dataloader),total=min(len(content_dataloader),len(style_dataloader)))      #This tqdm library is for tracking loops and here for tracking training loops  ka progress like 10%.........25% and so on .... basically progress bar  zip is ki hum content and style dataloader ko combine kr rhe hai and this min(len...,len(.)) coz jo km hoga utne he batches banange
 
         running_loss=0     #Setting loss to 0 for every iteration 
         running_content_loss=0 
@@ -82,15 +109,16 @@ def main():
             c_feats=encoder(content_batch)  #So 1st we are sending every image from style and content batch through encoder
             s_feats=encoder(style_batch)
 
-            t=adaptive_instance_normalization(c_feats[-1],s_feats[-1])  #Then the o/p of the encoder layer is passed through AdaIN layer this is defined in utils and this c_feats[-1] means we get 4 layers from the encoder and so we just only pass 1 to Adain and rest 3 we kept for loss and all
+            t=adaptive_instance_normalization(c_feats[-1],s_feats[-1])  #Then the o/p of the encoder layer is passed through AdaIN layer this is defined in utils and this c_feats[-1] means we get 4 layers from the encoder and so we just only pass 1 to Adain and rest 3 we kept for loss and all and we pass the depest layer the last one layer
 
             g=decoder(t) #Then simply we pass the o/p of the AdaIN layer to the decoder and get the o/p image according to the architecture
 
             g_feats=encoder(g) #so content loss is between g_feats and t(from AdaIN)
 
-            loss_c=mse_loss(g_feats[-1],t)*args.content_weights #So the content loss is calculated by g_feats and t by using MSE loss * content_wts
+            loss_c=mse_loss(g_feats[-1],t)*args.content_weight #So the content loss is calculated by g_feats and t by using MSE loss * content_wts
             loss_s=0
-            for g_f,s_f in zip(g_feats,s_feats): #so style loss is calculated by in terms of mean and standard deviation 
+
+            for g_f,s_f in zip(g_feats,s_feats): #so style loss is calculated by in terms of mean and standard deviation for all 4 layers so thats y for loop here
                 g_mean,g_std=calc_mean_std(g_f)  #mean and standard deviation of the output image
                 s_mean,s_std=calc_mean_std(s_f)   #mean and SD of the style image
                 loss_s +=mse_loss(g_mean,s_mean)+mse_loss(g_std,s_std) #calculating the loss by both of em
@@ -108,14 +136,23 @@ def main():
             running_content_loss+=loss_c.item()
             running_style_loss+=loss_s.item()
 
+
         scheduler.step()  #After each epoch we gonna update the learning rate using scadular
+
 
         running_loss/=len(content_dataloader)
         running_content_loss/=len(content_dataloader)
         running_style_loss/=len(content_dataloader)
 
+
         if (epoch+1) % args.log_interval == 0:
             tqdm.write(f"Iter {epoch+1}: Loss:{running_loss:4f}, Content Loss: {running_content_loss:4f}, Style Loss: {running_style_loss:4f}")
+
+
+        if (epoch+1)% args.save_interval==0:
+            torch.save(decoder.state_dict(),save_dir/f'decoder {epoch+1}.pth')  #so for save checkpoints we have inbuild function called save_interval and in that torch.save and this gonna save the decoder values coz encoder is freezed 
+
+   
 
 
 if __name__=='__main__':
