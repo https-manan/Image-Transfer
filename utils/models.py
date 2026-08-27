@@ -73,7 +73,7 @@ class VGGEncoder(nn.Module):
 
         # Load pretrained VGG weights
         self.vgg.load_state_dict(torch.load(vgg_path))  #Isse model mai wts load krenge and vgg_path mai saved wts hote hai jo best o/p dete hai and so unhe hum self mai save krenge best wts ko
-
+    
 
 
         #to hume sirf ReLU 4-1 tk ka o/p chiya so we gonna store till there only to buss use he seprate kr rhe hai 
