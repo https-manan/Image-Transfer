@@ -1,615 +1,788 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Repaint — AdaIN Style Transfer</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<style>
-    :root {
-        --ink: #14171a;
-        --panel: #1d2126;
-        --panel-2: #22262c;
-        --border: rgba(237, 234, 227, 0.08);
-        --border-strong: rgba(237, 234, 227, 0.16);
-        --ivory: #edeae3;
-        --muted: #9aa2a8;
-        --moss: #7c9885;
-        --moss-soft: rgba(124, 152, 133, 0.14);
-        --clay: #b98255;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleFusion — AdaIN Style Transfer</title>
 
-    * { box-sizing: border-box; }
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 
-    body {
-        font-family: 'Inter', sans-serif;
-        background-color: var(--ink);
-        background-image: radial-gradient(ellipse 900px 500px at 85% -10%, var(--moss-soft), transparent 60%);
-        color: var(--ivory);
-        min-height: 100vh;
-    }
+    <style>
+        :root {
+            --ink: #14171a;
+            --panel: #1d2126;
+            --panel-2: #22262c;
+            --border: rgba(237, 234, 227, 0.08);
+            --border-strong: rgba(237, 234, 227, 0.16);
+            --ivory: #edeae3;
+            --muted: #9aa2a8;
+            --moss: #7c9885;
+            --moss-soft: rgba(124, 152, 133, 0.14);
+            --clay: #b98255;
+        }
 
-    .eyebrow {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--moss);
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        margin-bottom: 0.9rem;
-    }
-    .eyebrow::before {
-        content: '';
-        width: 22px;
-        height: 1px;
-        background: var(--moss);
-        display: inline-block;
-    }
+        * {
+            box-sizing: border-box;
+        }
 
-    .header-section {
-        padding: 6rem 0 3.5rem;
-        border-bottom: 1px solid var(--border);
-    }
-    .header-section h1 {
-        font-family: 'Fraunces', serif;
-        font-weight: 500;
-        font-size: 3.1rem;
-        line-height: 1.1;
-        color: var(--ivory);
-        margin-bottom: 1.1rem;
-        max-width: 620px;
-    }
-    .header-section h1 em {
-        font-style: italic;
-        color: var(--moss);
-    }
-    .header-section .lead {
-        font-size: 1.05rem;
-        color: var(--muted);
-        max-width: 480px;
-        font-weight: 400;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--ink);
+            background-image: radial-gradient(
+                ellipse 900px 500px at 85% -10%,
+                var(--moss-soft),
+                transparent 60%
+            );
+            color: var(--ivory);
+            min-height: 100vh;
+        }
 
-    .card {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        box-shadow: none;
-    }
-    .card-header {
-        background: transparent;
-        border-bottom: 1px solid var(--border);
-        color: var(--ivory);
-        font-family: 'IBM Plex Mono', monospace;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        font-size: 0.78rem;
-        font-weight: 500;
-        padding: 1rem 1.25rem;
-    }
+        .eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--moss);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.9rem;
+        }
 
-    .preview-image {
-        width: 100%;
-        height: 280px;
-        object-fit: contain;
-        background-color: var(--ink);
-        border: 1px dashed var(--border-strong);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--muted);
-        font-size: 0.95rem;
-        overflow: hidden;
-    }
-    .preview-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-    }
+        .eyebrow::before {
+            content: '';
+            width: 22px;
+            height: 1px;
+            background: var(--moss);
+            display: inline-block;
+        }
 
-    .btn-primary {
-        background: var(--moss);
-        border: 1px solid var(--moss);
-        color: var(--ink);
-        padding: 0.85rem 2.75rem;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: 8px;
-        transition: background 0.15s ease, border-color 0.15s ease;
-    }
-    .btn-primary:hover,
-    .btn-primary:focus {
-        background: #6c8874;
-        border-color: #6c8874;
-        color: var(--ink);
-    }
+        .header-section {
+            padding: 6rem 0 3.5rem;
+            border-bottom: 1px solid var(--border);
+        }
 
-    .btn-outline-light {
-        border: 1px solid var(--border-strong);
-        color: var(--ivory);
-        border-radius: 8px;
-    }
-    .btn-outline-light:hover {
-        background: var(--panel-2);
-        border-color: var(--border-strong);
-        color: var(--ivory);
-    }
+        .header-section h1 {
+            font-family: 'Fraunces', serif;
+            font-weight: 500;
+            font-size: 3.1rem;
+            line-height: 1.1;
+            color: var(--ivory);
+            margin-bottom: 1.1rem;
+            max-width: 620px;
+        }
 
-    /* Range Slider */
-    .range-wrap {
-        margin: 0 auto 2rem;
-        width: 100%;
-        max-width: 90%;
-    }
-    .range-wrap .range-label-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        margin-bottom: 0.6rem;
-    }
-    .range-wrap label {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.75rem;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted);
-    }
-    #rangeValue {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.85rem;
-        color: var(--moss);
-    }
+        .header-section h1 em {
+            font-style: italic;
+            color: var(--moss);
+        }
 
-    #alphaRange {
-        -webkit-appearance: none;
-        width: 100%;
-        height: 4px;
-        background: var(--border-strong);
-        border-radius: 4px;
-        outline: none;
-    }
-    #alphaRange::-webkit-slider-runnable-track {
-        width: 100%;
-        height: 100%;
-        cursor: pointer;
-        background: transparent;
-    }
-    #alphaRange::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        height: 17px;
-        width: 17px;
-        border-radius: 50%;
-        background: var(--clay);
-        cursor: pointer;
-        margin-top: -6.5px;
-        border: 2px solid var(--ink);
-    }
-    #alphaRange::-moz-range-thumb {
-        height: 17px;
-        width: 17px;
-        border-radius: 50%;
-        background: var(--clay);
-        cursor: pointer;
-        border: 2px solid var(--ink);
-    }
+        .header-section .lead {
+            font-size: 1.05rem;
+            color: var(--muted);
+            max-width: 480px;
+            font-weight: 400;
+        }
 
-    .form-control {
-        background-color: var(--panel-2);
-        border: 1px solid var(--border-strong);
-        color: var(--ivory);
-        border-radius: 8px;
-    }
-    .form-control:focus {
-        background-color: var(--panel-2);
-        border-color: var(--moss);
-        color: var(--ivory);
-        box-shadow: 0 0 0 0.2rem var(--moss-soft);
-    }
-    .form-control::file-selector-button {
-        background-color: var(--panel);
-        color: var(--ivory);
-        border: 1px solid var(--border-strong);
-        padding: 0.4rem 0.8rem;
-        margin-right: 0.75rem;
-        border-radius: 6px;
-    }
-    .form-control::file-selector-button:hover {
-        background-color: #2a2f36;
-    }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: none;
+        }
 
-    ::selection { background: var(--moss-soft); }
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border);
+            color: var(--ivory);
+            font-family: 'IBM Plex Mono', monospace;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 1rem 1.25rem;
+        }
 
-    /* Result */
-    #resultSection .card-header {
-        color: var(--ivory);
-        border-bottom-color: var(--border-strong);
-    }
+        .preview-image {
+            width: 100%;
+            height: 280px;
+            object-fit: contain;
+            background-color: var(--ink);
+            border: 1px dashed var(--border-strong);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            font-size: 0.95rem;
+            overflow: hidden;
+        }
 
-    .alert-danger {
-        background: rgba(185, 90, 66, 0.12);
-        border: 1px solid rgba(185, 90, 66, 0.4);
-        color: #e3a894;
-        border-radius: 8px;
-    }
+        .preview-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
 
-    /* Navbar */
-    .navbar {
-        background: rgba(20, 23, 26, 0.92);
-        border-bottom: 1px solid var(--border);
-        backdrop-filter: blur(6px);
-    }
-    .navbar-brand {
-        font-family: 'Fraunces', serif;
-        font-weight: 500;
-        font-size: 1.3rem;
-        color: var(--ivory) !important;
-        letter-spacing: 0.01em;
-    }
-    .navbar-brand span { color: var(--moss); }
+        .btn-primary {
+            background: var(--moss);
+            border: 1px solid var(--moss);
+            color: var(--ink);
+            padding: 0.85rem 2.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
 
-    /* Examples */
-    .examples-section { margin-top: 3.5rem; }
-    .examples-section .example-image {
-        width: 100%;
-        height: 210px;
-        object-fit: contain;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        background: var(--ink);
-    }
-    .examples-section .example-role {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.68rem;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-    }
-    .examples-section .example-flow {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        padding: 1.25rem;
-        border-radius: 10px;
-        background: var(--panel-2);
-        border: 1px solid var(--border);
-    }
-    .examples-section .example-inputs {
-        flex: 1;
-        display: grid;
-        gap: 1rem;
-    }
-    .examples-section .example-output { flex: 1; }
-    .examples-section .example-arrow {
-        color: var(--moss);
-        font-size: 1.4rem;
-        line-height: 1;
-    }
-    @media (max-width: 767.98px) {
-        .examples-section .example-flow { flex-direction: column; }
-        .examples-section .example-arrow { transform: rotate(90deg); }
-    }
+        .btn-primary:hover,
+        .btn-primary:focus {
+            background: #6c8874;
+            border-color: #6c8874;
+            color: var(--ink);
+        }
 
-    /* FAQ */
-    .faq-section { margin-top: 3.5rem; }
-    .faq-section .accordion-item {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        margin-bottom: 0.6rem;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    .faq-section .accordion-button {
-        background: var(--panel);
-        color: var(--ivory);
-        font-weight: 500;
-        font-size: 0.95rem;
-    }
-    .faq-section .accordion-button:not(.collapsed) {
-        background: var(--panel-2);
-        color: var(--ivory);
-        box-shadow: none;
-    }
-    .faq-section .accordion-button:focus { box-shadow: 0 0 0 0.2rem var(--moss-soft); }
-    .faq-section .accordion-button::after { filter: invert(1) opacity(0.6); }
-    .faq-section .accordion-body { color: var(--muted); font-size: 0.92rem; }
+        .btn-outline-light {
+            border: 1px solid var(--border-strong);
+            color: var(--ivory);
+            border-radius: 8px;
+        }
 
-    /* Footer */
-    .footer-section {
-        border-top: 1px solid var(--border);
-        padding: 2.5rem 0;
-        margin-top: 4rem;
-        color: var(--muted);
-        font-size: 0.85rem;
-    }
+        .btn-outline-light:hover {
+            background: var(--panel-2);
+            border-color: var(--border-strong);
+            color: var(--ivory);
+        }
 
-    /* Loading overlay — static, no glow/spin color cycling */
-    .loader-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(20, 23, 26, 0.92);
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.15s ease;
-    }
-    .loader-overlay.active { opacity: 1; pointer-events: all; }
-    .spinner-ring {
-        width: 34px;
-        height: 34px;
-        border: 3px solid var(--border-strong);
-        border-top: 3px solid var(--moss);
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        margin-bottom: 1.1rem;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loader-overlay p {
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.8rem;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--muted);
-    }
+        /* Range Slider */
+        .range-wrap {
+            margin: 0 auto 2rem;
+            width: 100%;
+            max-width: 90%;
+        }
 
-    @media (prefers-reduced-motion: reduce) {
-        .spinner-ring { animation: none; }
-        * { transition: none !important; }
-    }
-</style>
+        .range-wrap .range-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.6rem;
+        }
+
+        .range-wrap label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        #rangeValue {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--moss);
+        }
+
+        #alphaRange {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--border-strong);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        #alphaRange::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        #alphaRange::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 17px;
+            width: 17px;
+            border-radius: 50%;
+            background: var(--clay);
+            cursor: pointer;
+            margin-top: -6.5px;
+            border: 2px solid var(--ink);
+        }
+
+        #alphaRange::-moz-range-thumb {
+            height: 17px;
+            width: 17px;
+            border-radius: 50%;
+            background: var(--clay);
+            cursor: pointer;
+            border: 2px solid var(--ink);
+        }
+
+        .form-control {
+            background-color: var(--panel-2);
+            border: 1px solid var(--border-strong);
+            color: var(--ivory);
+            border-radius: 8px;
+        }
+
+        .form-control:focus {
+            background-color: var(--panel-2);
+            border-color: var(--moss);
+            color: var(--ivory);
+            box-shadow: 0 0 0 0.2rem var(--moss-soft);
+        }
+
+        .form-control::file-selector-button {
+            background-color: var(--panel);
+            color: var(--ivory);
+            border: 1px solid var(--border-strong);
+            padding: 0.4rem 0.8rem;
+            margin-right: 0.75rem;
+            border-radius: 6px;
+        }
+
+        .form-control::file-selector-button:hover {
+            background-color: #2a2f36;
+        }
+
+        ::selection {
+            background: var(--moss-soft);
+        }
+
+        /* Result */
+        #resultSection .card-header {
+            color: var(--ivory);
+            border-bottom-color: var(--border-strong);
+        }
+
+        .alert-danger {
+            background: rgba(185, 90, 66, 0.12);
+            border: 1px solid rgba(185, 90, 66, 0.4);
+            color: #e3a894;
+            border-radius: 8px;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: rgba(20, 23, 26, 0.92);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(6px);
+        }
+
+        .navbar-brand {
+            font-family: 'Fraunces', serif;
+            font-weight: 500;
+            font-size: 1.3rem;
+            color: var(--ivory) !important;
+            letter-spacing: 0.01em;
+        }
+
+        .navbar-brand span {
+            color: var(--moss);
+        }
+
+        /* Examples */
+        .examples-section {
+            margin-top: 3.5rem;
+        }
+
+        .examples-section .example-image {
+            width: 100%;
+            height: 210px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--ink);
+        }
+
+        .examples-section .example-role {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .examples-section .example-flow {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.25rem;
+            border-radius: 10px;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+        }
+
+        .examples-section .example-inputs {
+            flex: 1;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .examples-section .example-output {
+            flex: 1;
+        }
+
+        .examples-section .example-arrow {
+            color: var(--moss);
+            font-size: 1.4rem;
+            line-height: 1;
+        }
+
+        @media (max-width: 767.98px) {
+            .examples-section .example-flow {
+                flex-direction: column;
+            }
+
+            .examples-section .example-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        /* FAQ */
+        .faq-section {
+            margin-top: 3.5rem;
+        }
+
+        .faq-section .accordion-item {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            margin-bottom: 0.6rem;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .faq-section .accordion-button {
+            background: var(--panel);
+            color: var(--ivory);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .faq-section .accordion-button:not(.collapsed) {
+            background: var(--panel-2);
+            color: var(--ivory);
+            box-shadow: none;
+        }
+
+        .faq-section .accordion-button:focus {
+            box-shadow: 0 0 0 0.2rem var(--moss-soft);
+        }
+
+        .faq-section .accordion-button::after {
+            filter: invert(1) opacity(0.6);
+        }
+
+        .faq-section .accordion-body {
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        /* Footer */
+        .footer-section {
+            border-top: 1px solid var(--border);
+            padding: 2.5rem 0;
+            margin-top: 4rem;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        /* Loading overlay */
+        .loader-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 23, 26, 0.92);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .loader-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner-ring {
+            width: 34px;
+            height: 34px;
+            border: 3px solid var(--border-strong);
+            border-top: 3px solid var(--moss);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 1.1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader-overlay p {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .spinner-ring {
+                animation: none;
+            }
+
+            * {
+                transition: none !important;
+            }
+        }
+    </style>
 </head>
+
 <body>
 
-<nav class="navbar navbar-expand-lg">
-    <div class="container">
-        <a class="navbar-brand" href="#">Repaint<span>.</span></a>
-    </div>
-</nav>
-
-<div class="header-section">
-    <div class="container">
-        <span class="eyebrow">AdaIN Style Transfer</span>
-        <h1>Repaint a photo in <em>any</em> style you give it.</h1>
-        <p class="lead">Upload a content image and a style reference — the model blends them in seconds. Adjust the strength to control how far it goes.</p>
-    </div>
-</div>
-
-<div class="container my-5">
-    <form method="post" enctype="multipart/form-data" id="uploadForm">
-        {{ form.hidden_tag() }}
-
-        <div class="row g-4">
-            <!-- Content Image Section -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header">Content image</div>
-                    <div class="card-body">
-                        <div class="preview-image mb-3" id="contentPreview">
-                            {% if content_image %}
-                                <img src="{{ url_for('send_image', filename=content_image) }}" alt="Content Image">
-                            {% else %}
-                                <span>No image selected</span>
-                            {% endif %}
-                        </div>
-                        {{ form.content(class="form-control", onchange="previewFile(this, 'contentPreview')") }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Style Image Section -->
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header">Style reference</div>
-                    <div class="card-body">
-                        <div class="preview-image mb-3" id="stylePreview">
-                            {% if style_image %}
-                                <img src="{{ url_for('send_image', filename=style_image) }}" alt="Style Image">
-                            {% else %}
-                                <span>No image selected</span>
-                            {% endif %}
-                        </div>
-                        {{ form.style(class="form-control", onchange="previewFile(this, 'stylePreview')") }}
-                    </div>
-                </div>
-            </div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                StyleFusion<span>.</span>
+            </a>
         </div>
+    </nav>
 
-        <!-- Controls Section -->
-        <div class="row justify-content-center mt-4">
+    <!-- Header -->
+    <div class="header-section">
+        <div class="container">
+            <span class="eyebrow">AdaIN Style Transfer</span>
+
+            <h1>
+                Convert an image in <em>any</em> style you want.
+            </h1>
+
+            <p class="lead">
+                Upload a content image and a style reference —
+                the model blends them in seconds. Adjust the strength
+                to control how far it goes.
+            </p>
+        </div>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="container my-5">
+
+        <form method="post" enctype="multipart/form-data" id="uploadForm">
+
+            {{ form.hidden_tag() }}
+
+            <div class="row g-4">
+
+                <!-- Content Image Section -->
+                <div class="col-md-6">
+                    <div class="card h-100">
+
+                        <div class="card-header">
+                            Content image
+                        </div>
+
+                        <div class="card-body">
+
+                            <div class="preview-image mb-3" id="contentPreview">
+                                {% if content_image %}
+                                    <img
+                                        src="{{ url_for('send_image', filename=content_image) }}"
+                                        alt="Content Image"
+                                    >
+                                {% else %}
+                                    <span>No image selected</span>
+                                {% endif %}
+                            </div>
+
+                            {{ form.content(
+                                class="form-control",
+                                onchange="previewFile(this, 'contentPreview')"
+                            ) }}
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style Image Section -->
+                <div class="col-md-6">
+                    <div class="card h-100">
+
+                        <div class="card-header">
+                            Style reference
+                        </div>
+
+                        <div class="card-body">
+
+                            <div class="preview-image mb-3" id="stylePreview">
+                                {% if style_image %}
+                                    <img
+                                        src="{{ url_for('send_image', filename=style_image) }}"
+                                        alt="Style Image"
+                                    >
+                                {% else %}
+                                    <span>No image selected</span>
+                                {% endif %}
+                            </div>
+
+                            {{ form.style(
+                                class="form-control",
+                                onchange="previewFile(this, 'stylePreview')"
+                            ) }}
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Controls Section -->
+            <div class="row justify-content-center mt-4">
+                <div class="col-md-8">
+
+                    <div class="range-wrap">
+
+                        <div class="range-label-row">
+                            <label for="alphaRange">Style strength</label>
+                            <span id="rangeValue">1.0</span>
+                        </div>
+
+                        {{ form.alpha(
+                            class="form-control-range",
+                            id="alphaRange",
+                            type="range",
+                            min="0",
+                            max="1",
+                            step="0.1"
+                        ) }}
+
+                    </div>
+
+                    <div class="text-center mt-4">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+
+                </div>
+            </div>
+
+        </form>
+
+        <!-- Result Section -->
+        {% if result_image %}
+        <div class="row justify-content-center mt-5" id="resultSection">
             <div class="col-md-8">
-                <div class="range-wrap">
-                    <div class="range-label-row">
-                        <label for="alphaRange">Style strength</label>
-                        <span id="rangeValue">1.0</span>
-                    </div>
-                    {{ form.alpha(class="form-control-range", id="alphaRange", type="range", min="0", max="1", step="0.1") }}
-                </div>
-                <div class="text-center mt-4">
-                    {{ form.submit(class="btn btn-primary") }}
-                </div>
-            </div>
-        </div>
-    </form>
 
-    {% if result_image %}
-    <div class="row justify-content-center mt-5" id="resultSection">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">Result</div>
-                <div class="card-body p-0">
-                    <img src="{{ url_for('send_image', filename=result_image) }}" class="img-fluid w-100" alt="Stylized Image" style="border-radius: 0 0 12px 12px;">
+                <div class="card">
+
+                    <div class="card-header">
+                        Result
+                    </div>
+
+                    <div class="card-body p-0">
+                        <img
+                            src="{{ url_for('send_image', filename=result_image) }}"
+                            class="img-fluid w-100"
+                            alt="Stylized Image"
+                            style="border-radius: 0 0 12px 12px;"
+                        >
+                    </div>
+
+                    <div
+                        class="card-footer text-center"
+                        style="background: transparent; border-top: 1px solid var(--border); padding: 1rem;"
+                    >
+                        <a
+                            href="{{ url_for('send_image', filename=result_image) }}"
+                            download
+                            class="btn btn-outline-light btn-sm px-4"
+                        >
+                            Download result
+                        </a>
+                    </div>
+
                 </div>
-                <div class="card-footer text-center" style="background: transparent; border-top: 1px solid var(--border); padding: 1rem;">
-                    <a href="{{ url_for('send_image', filename=result_image) }}" download class="btn btn-outline-light btn-sm px-4">Download result</a>
-                </div>
+
             </div>
         </div>
+        {% endif %}
+
+        <!-- Error Section -->
+        {% if error %}
+            <div class="alert alert-danger mt-4 text-center" role="alert">
+                <strong>Error:</strong> {{ error }}
+            </div>
+        {% endif %}
+
     </div>
-    {% endif %}
 
-    {% if error %}
-        <div class="alert alert-danger mt-4 text-center" role="alert">
-            <strong>Error:</strong> {{ error }}
-        </div>
-    {% endif %}
-</div>
+    <!-- Examples Section -->
+    <section class="container examples-section">
 
-<section class="container examples-section">
-    <span class="eyebrow">Examples</span>
-    <div class="row g-3">
-        <div class="col-12">
-            <div class="example-flow">
-                <div class="example-inputs">
-                    <div>
-                        <div class="example-role">Content</div>
-                        <img src="{{ url_for('send_example', filename='brad_pitt.jpg') }}" alt="Content example" class="example-image">
+        <span class="eyebrow">Examples</span>
+
+        <div class="row g-3">
+
+            <!-- Example 1 -->
+            <div class="col-12">
+                <div class="example-flow">
+
+                    <div class="example-inputs">
+
+                        <div>
+                            <div class="example-role">Content</div>
+                            <img
+                                src="{{ url_for('static', filename='Context_1.jpg') }}"
+                                alt="Content example"
+                                class="example-image"
+                            >
+                        </div>
+
+                        <div>
+                            <div class="example-role">Style</div>
+                            <img
+                                src="{{ url_for('static', filename='4021.jpg') }}"
+                                alt="Sketch style example"
+                                class="example-image"
+                            >
+                        </div>
+
                     </div>
-                    <div>
-                        <div class="example-role">Style</div>
-                        <img src="{{ url_for('send_example', filename='sketch.png') }}" alt="Sketch style example" class="example-image">
+
+                    <div class="example-arrow">&rarr;</div>
+
+                    <div class="example-output">
+                        <div class="example-role">Output</div>
+                        <img
+                            src="{{ url_for('static', filename='stylized_Context_1.jpg') }}"
+                            alt="Sketch result example"
+                            class="example-image"
+                        >
                     </div>
-                </div>
-                <div class="example-arrow">&rarr;</div>
-                <div class="example-output">
-                    <div class="example-role">Output</div>
-                    <img src="{{ url_for('send_example', filename='stylized_brad_pitt.jpg') }}" alt="Sketch result example" class="example-image">
+
                 </div>
             </div>
-        </div>
-        <div class="col-12">
-            <div class="example-flow">
-                <div class="example-inputs">
-                    <div>
-                        <div class="example-role">Content</div>
-                        <img src="{{ url_for('send_example', filename='brad_pitt.jpg') }}" alt="Content example" class="example-image">
+
+            <!-- Example 2 -->
+            <div class="col-12">
+                <div class="example-flow">
+
+                    <div class="example-inputs">
+
+                        <div>
+                            <div class="example-role">Content</div>
+                            <img
+                                src="{{ url_for('static', filename='Context_2.jpg') }}"
+                                alt="Content example"
+                                class="example-image"
+                            >
+                        </div>
+
+                        <div>
+                            <div class="example-role">Style</div>
+                            <img
+                                src="{{ url_for('static', filename='424.jpg') }}"
+                                alt="Picasso style example"
+                                class="example-image"
+                            >
+                        </div>
+
                     </div>
-                    <div>
-                        <div class="example-role">Style</div>
-                        <img src="{{ url_for('send_example', filename='picasso_seated_nude_hr.jpg') }}" alt="Picasso style example" class="example-image">
+
+                    <div class="example-arrow">&rarr;</div>
+
+                    <div class="example-output">
+                        <div class="example-role">Output</div>
+                        <img
+                            src="{{ url_for('static', filename='stylized_Context_2.jpg') }}"
+                            alt="Picasso result example"
+                            class="example-image"
+                        >
                     </div>
-                </div>
-                <div class="example-arrow">&rarr;</div>
-                <div class="example-output">
-                    <div class="example-role">Output</div>
-                    <img src="{{ url_for('send_example', filename='stylized_brad_pitt (1).jpg') }}" alt="Picasso result example" class="example-image">
+
                 </div>
             </div>
+
         </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-section">
+        <div class="container d-flex flex-wrap justify-content-between gap-2">
+            <span>StyleFusion — AdaIN style transfer</span>
+            <span>Built with Python, PyTorch &amp; Flask</span>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div class="loader-overlay" id="loader">
+        <div class="spinner-ring"></div>
+        <p>Processing</p>
     </div>
-</section>
 
-<section class="container faq-section">
-    <span class="eyebrow">FAQ</span>
-    <div class="accordion" id="faqAccordion">
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="faqHeadingOne">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqOne" aria-expanded="false" aria-controls="faqOne">
-                    Is it a pretrained model?
-                </button>
-            </h2>
-            <div id="faqOne" class="accordion-collapse collapse" aria-labelledby="faqHeadingOne" data-bs-parent="#faqAccordion">
-                <div class="accordion-body">No — the decoder is trained from scratch on our own data.</div>
-            </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="faqHeadingTwo">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqTwo" aria-expanded="false" aria-controls="faqTwo">
-                    Is it free to use?
-                </button>
-            </h2>
-            <div id="faqTwo" class="accordion-collapse collapse" aria-labelledby="faqHeadingTwo" data-bs-parent="#faqAccordion">
-                <div class="accordion-body">This demo is currently available at no cost.</div>
-            </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="faqHeadingThree">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqThree" aria-expanded="false" aria-controls="faqThree">
-                    What kinds of styles can I use?
-                </button>
-            </h2>
-            <div id="faqThree" class="accordion-collapse collapse" aria-labelledby="faqHeadingThree" data-bs-parent="#faqAccordion">
-                <div class="accordion-body">Almost any painting or illustration style works — impressionist, cubist, watercolor, pencil sketch, and more.</div>
-            </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="faqHeadingFour">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqFour" aria-expanded="false" aria-controls="faqFour">
-                    What's the tech stack?
-                </button>
-            </h2>
-            <div id="faqFour" class="accordion-collapse collapse" aria-labelledby="faqHeadingFour" data-bs-parent="#faqAccordion">
-                <div class="accordion-body">Python, PyTorch, and Flask.</div>
-            </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="faqHeadingFive">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqFive" aria-expanded="false" aria-controls="faqFive">
-                    What was it trained on?
-                </button>
-            </h2>
-            <div id="faqFive" class="accordion-collapse collapse" aria-labelledby="faqHeadingFive" data-bs-parent="#faqAccordion">
-                <div class="accordion-body">A large-scale general-purpose image dataset.</div>
-            </div>
-        </div>
-    </div>
-</section>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<footer class="footer-section">
-    <div class="container d-flex flex-wrap justify-content-between gap-2">
-        <span>Repaint — AdaIN style transfer demo</span>
-        <span>Built with Python, PyTorch &amp; Flask</span>
-    </div>
-</footer>
+    <script>
+        function previewFile(input, previewId) {
+            const preview = document.getElementById(previewId);
+            const file = input.files[0];
 
-<!-- Loading Overlay -->
-<div class="loader-overlay" id="loader">
-    <div class="spinner-ring"></div>
-    <p>Processing</p>
-</div>
+            if (!file) return;
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    function previewFile(input, previewId) {
-        const preview = document.getElementById(previewId);
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.addEventListener("load", function () {
-            preview.innerHTML = `<img src="${reader.result}" alt="Image preview">`;
-        }, false);
-        reader.readAsDataURL(file);
-    }
+            const reader = new FileReader();
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const resultSection = document.getElementById('resultSection');
-        if (resultSection) {
-            resultSection.scrollIntoView({ behavior: 'smooth' });
+            reader.addEventListener("load", function () {
+                preview.innerHTML = `<img src="${reader.result}" alt="Image preview">`;
+            }, false);
+
+            reader.readAsDataURL(file);
         }
 
-        // Range slider value readout
-        const range = document.getElementById('alphaRange');
-        const rangeValue = document.getElementById('rangeValue');
-        if (range) {
-            const updateRange = () => { rangeValue.textContent = parseFloat(range.value).toFixed(1); };
-            range.addEventListener('input', updateRange);
-            updateRange();
-        }
+        document.addEventListener('DOMContentLoaded', function () {
 
-        // Show a loading state on submit
-        const form = document.getElementById('uploadForm');
-        const loader = document.getElementById('loader');
-        if (form && loader) {
-            form.addEventListener('submit', () => { loader.classList.add('active'); });
-        }
-    });
-</script>
+            // Scroll to result after processing
+            const resultSection = document.getElementById('resultSection');
+
+            if (resultSection) {
+                resultSection.scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+
+            // Range slider value readout
+            const range = document.getElementById('alphaRange');
+            const rangeValue = document.getElementById('rangeValue');
+
+            if (range) {
+                const updateRange = () => {
+                    rangeValue.textContent = parseFloat(range.value).toFixed(1);
+                };
+
+                range.addEventListener('input', updateRange);
+                updateRange();
+            }
+
+            // Show loading state on submit
+            const form = document.getElementById('uploadForm');
+            const loader = document.getElementById('loader');
+
+            if (form && loader) {
+                form.addEventListener('submit', () => {
+                    loader.classList.add('active');
+                });
+            }
+
+        });
+    </script>
+
 </body>
 </html>
