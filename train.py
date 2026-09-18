@@ -19,8 +19,8 @@ def parse_arguments():
 
     #This we gonna take from use the operations we wanna apply on image
     parser.add_argument('--final_size',type=int,default=256,help='size of final image')
-    parser.add_argument('--content_size',type=int,default=512,help='size of content image')
-    parser.add_argument('--style_size',type=int,default=512,help='size of style image')
+    parser.add_argument('--content_size',type=int,default=256,help='size of content image')
+    parser.add_argument('--style_size',type=int,default=256,help='size of style image')
     parser.add_argument('--crop', action='store_true', default=True, help='Crop image')#basically jb bhi call --crop to image crop bhi hogi 
     parser.add_argument('--batch_size', type=int, default=4, help='Batch size')
     parser.add_argument('--lr',type=float,default=1e-4,help='Learning rate')#1e-4 means that 10 to the power -4
